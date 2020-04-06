@@ -1,0 +1,18 @@
+---
+version: "3.2"
+services:
+  app:
+    build: .
+    #image: mohemohe/switchfeed:latest #まだうっぴろーどしてない
+    env_file:
+      - .env
+    volumes:
+      - ./config:/switchfeed/config
+      - ./images:/switchfeed/images
+    networks:
+      - default
+    ports:
+      - 127.0.0.1:8080:8080
+    restart: on-failure
+networks:
+  default:

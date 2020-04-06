@@ -1,0 +1,5 @@
+github.com/go-httpproxy/httpproxy v0.0.0-20180417134941-6977c68bf38e h1:ZWrG9Qs9xKF9638OVBT9Dd84CduxRWKX1/ZuwDI9e5o=
+github.com/go-httpproxy/httpproxy v0.0.0-20180417134941-6977c68bf38e/go.mod h1:Ftx0ecWwj8tX+5XPIE2KldKlneCsk9xMEaVpNbFRSt4=
+github.com/huandu/facebook v1.8.1 h1:MXHiGR+O3+dxzxCHnwrx5K7RreOXWaHaV2Jp8ryQ+g0=
+github.com/huandu/facebook/v2 v2.5.2 h1:ooasHXvKwYKfA80nvZA8KIxghCISKQEzkwE2wB6BYfw=
+github.com/huandu/facebook/v2 v2.5.2/go.mod h1:rqIu94SVVn2xO8++Dpq5ImTwYYh29X4ec18wcevdcOw=
