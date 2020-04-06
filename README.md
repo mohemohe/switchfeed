@@ -18,7 +18,7 @@ docker-compose run --service-ports app
 docker-compose up -d
 ```
 
-## FaceBookアプリケーションの設定方法
+## Facebookアプリケーションの設定方法
 
 - `webhookに使うドメイン名` を `.env` に入力する
 - https://developers.facebook.com/apps/ でアプリを作成する
