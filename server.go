@@ -11,7 +11,7 @@ type (
 	M = map[string]interface{}
 )
 
-func listen() {
+func listen(env *Env) {
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		_, _ = w.Write([]byte("OK"))
 	})
@@ -39,6 +39,6 @@ func listen() {
 			go handleImage()
 		}
 	})
-	log.Println("server listen on :8080")
-	log.Fatalln(http.ListenAndServe(":8080", nil))
+	log.Println("server listen on " + env.ListenAddr)
+	log.Fatalln(http.ListenAndServe(env.ListenAddr, nil))
 }

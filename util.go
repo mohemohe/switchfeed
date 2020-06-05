@@ -16,6 +16,7 @@ type (
 		AppID     string
 		AppSecret string
 		BaseURL   string
+		ListenAddr string
 		Mode      Mode
 		Mastodon  Mastodon
 	}
@@ -33,9 +34,13 @@ func mustEnv() *Env {
 	appID := os.Getenv("FACEBOOK_APP_ID")
 	appSecret := os.Getenv("FACEBOOK_APP_SECRET")
 	baseURL := os.Getenv("SWITCHFEED_BASE_URL")
+	listenAddr := os.Getenv("SWITCHFEED_LISTEN_ADDR")
 	mode := os.Getenv("SWITCHFEED_MODE")
 	mastodonBaseURL := os.Getenv("MASTODON_BASE_URL")
 	mastodonAccessToken := os.Getenv("MASTODON_ACCESS_TOKEN")
+	if listenAddr == "" {
+		listenAddr = ":8080"
+	}
 	if appID == "" || appSecret == "" || baseURL == "" || mode == "" {
 		panic("環境変数 'FACEBOOK_APP_ID', 'FACEBOOK_APP_SECRET', 'SWITCHFEED_BASE_URL', 'SWITCHFEED_MODE' のどれか、あるいは全てが設定されていません")
 	}
@@ -53,6 +58,7 @@ func mustEnv() *Env {
 		AppID:     appID,
 		AppSecret: appSecret,
 		BaseURL:   baseURL,
+		ListenAddr: listenAddr,
 		Mode:      m,
 		Mastodon: Mastodon{
 			BaseURL:     mastodonBaseURL,

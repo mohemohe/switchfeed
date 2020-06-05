@@ -11,9 +11,10 @@ func main() {
 	_ = os.Mkdir(path.Join(getDir(), "config"), 0700)
 	_ = os.Mkdir(path.Join(getDir(), "images"), 0755)
 
-	go listen()
-
 	env := mustEnv()
+
+	go listen(env)
+
 	cred := loadCredential()
 	if cred != nil {
 		mustRefreshToken(env, cred.Token)
