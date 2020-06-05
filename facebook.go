@@ -39,6 +39,7 @@ type (
 	}
 	Image struct {
 		ID     string `json:"id"`
+		Name     string `json:"name"`
 		Images []struct {
 			Width  int    `json:"width"`
 			Height int    `json:"height"`
@@ -149,7 +150,7 @@ func getImageURL() (*Result, error) {
 	}
 
 	imageResult, err := sess.Get(latestObjectID, M{
-		"fields": "images",
+		"fields": "name,images",
 	})
 	if err != nil {
 		log.Println("image list fetch error:", err)
@@ -167,6 +168,10 @@ func getImageURL() (*Result, error) {
 	sort.Slice(image.Images, func(i, j int) bool {
 		return image.Images[i].Width > image.Images[j].Width
 	})
+	if message == "" {
+		// FIXME: なんかこれでもtext取れたり取れなかったりするんだよなぁ
+		message = image.Name
+	}
 
 	return &Result{
 		Message:  message,
