@@ -14,7 +14,7 @@ import (
 type (
 	Credential struct {
 		ExpireAt time.Time
-		Token string
+		Token    string
 	}
 )
 

@@ -24,9 +24,9 @@ func main() {
 
 	initFacebookSession(env, cred)
 
-	result, err := sess.Post(sess.App().AppId + "/subscriptions", M{
-		"object": "user",
-		"callback_url": env.BaseURL + "/webhook",
+	result, err := sess.Post(sess.App().AppId+"/subscriptions", M{
+		"object":         "user",
+		"callback_url":   env.BaseURL + "/webhook",
 		"include_values": true,
 		"fields": []string{
 			"feed",
