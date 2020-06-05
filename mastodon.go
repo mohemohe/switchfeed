@@ -8,7 +8,7 @@ import (
 
 func postMastodon(env *Env, text string, filePath string) {
 	client := mastodon.NewClient(&mastodon.Config{
-		Server: env.Mastodon.BaseURL,
+		Server:      env.Mastodon.BaseURL,
 		AccessToken: env.Mastodon.AccessToken,
 	})
 
@@ -18,7 +18,7 @@ func postMastodon(env *Env, text string, filePath string) {
 		return
 	}
 	_, err = client.PostStatus(context.TODO(), &mastodon.Toot{
-		Status:      text,
+		Status: text,
 		MediaIDs: []mastodon.ID{
 			attachment.ID,
 		},

@@ -13,12 +13,12 @@ import (
 
 type (
 	Env struct {
-		AppID     string
-		AppSecret string
-		BaseURL   string
+		AppID      string
+		AppSecret  string
+		BaseURL    string
 		ListenAddr string
-		Mode      Mode
-		Mastodon  Mastodon
+		Mode       Mode
+		Mastodon   Mastodon
 	}
 	Mode struct {
 		Save     bool
@@ -55,11 +55,11 @@ func mustEnv() *Env {
 		}
 	}
 	return &Env{
-		AppID:     appID,
-		AppSecret: appSecret,
-		BaseURL:   baseURL,
+		AppID:      appID,
+		AppSecret:  appSecret,
+		BaseURL:    baseURL,
 		ListenAddr: listenAddr,
-		Mode:      m,
+		Mode:       m,
 		Mastodon: Mastodon{
 			BaseURL:     mastodonBaseURL,
 			AccessToken: mastodonAccessToken,
