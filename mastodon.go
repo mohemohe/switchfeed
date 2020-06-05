@@ -17,7 +17,7 @@ func postMastodon(env *Env, text string, filePath string) {
 		log.Println("mastodon file upload error:", filePath, err)
 		return
 	}
-	_, err = client.PostStatus(context.TODO(), &mastodon.Toot{
+	status, err := client.PostStatus(context.TODO(), &mastodon.Toot{
 		Status: text,
 		MediaIDs: []mastodon.ID{
 			attachment.ID,
@@ -29,5 +29,7 @@ func postMastodon(env *Env, text string, filePath string) {
 	})
 	if err != nil {
 		log.Println("mastodon post status error:", filePath, err)
+		return
 	}
+	log.Println("mastodon posted:", status.ID, status.Content)
 }
