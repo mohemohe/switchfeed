@@ -35,17 +35,17 @@ type (
 				Category  string `json:"category"`
 				Link      string `json:"link"`
 			} `json:"application"`
-			Attachments *struct {
+			Attachments struct {
 				Data []struct {
-					SubAttachments struct {
+					SubAttachments *struct {
 						Data []struct {
 							Target []struct {
 								ID string `json:"id"`
 							} `json:"target"`
 						} `json:"data"`
-					} `json:"subattachments"`
+					} `json:"subattachments,omitempty"`
 				} `json:"data"`
-			} `json:"attachments,omitempty"`
+			} `json:"attachments"`
 		} `json:"data"`
 		Paging struct {
 			Previous string `json:"previous"`
@@ -183,14 +183,14 @@ func getImageURLs() (*Result, error) {
 		if v.Application.NameSpace == "nintendoswitchshare" {
 			latestObjectID = v.ObjectID
 			message = v.Message
-			if v.Attachments == nil {
-				targetObjectIDs = append(targetObjectIDs, v.ObjectID)
-			} else {
-				for _, a := range v.Attachments.Data {
-					for _, d := range a.SubAttachments.Data {
-						for _, t := range d.Target {
-							targetObjectIDs = append(targetObjectIDs, t.ID)
-						}
+			for _, a := range v.Attachments.Data {
+				if a.SubAttachments == nil {
+					targetObjectIDs = append(targetObjectIDs, v.ObjectID)
+					break
+				}
+				for _, d := range a.SubAttachments.Data {
+					for _, t := range d.Target {
+						targetObjectIDs = append(targetObjectIDs, t.ID)
 					}
 				}
 			}
