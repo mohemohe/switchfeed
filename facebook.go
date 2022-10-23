@@ -2,11 +2,15 @@ package main
 
 import (
 	"encoding/json"
-	"github.com/huandu/facebook/v2"
+	"errors"
 	"log"
 	"os"
 	"sort"
+	"strconv"
+	"sync"
 	"time"
+
+	"github.com/huandu/facebook/v2"
 )
 
 type (
@@ -21,9 +25,9 @@ type (
 	}
 	Feed struct {
 		Data []struct {
-			ID          string `json:"id"`
-			ObjectID    string `json:"object_id"`
-			Message     string `json:"message"`
+			ID          string  `json:"id"`
+			ObjectID    string  `json:"object_id"`
+			Message     *string `json:"message,omitempty"`
 			Application struct {
 				ID        string `json:"id"`
 				Name      string `json:"name"`
@@ -31,6 +35,18 @@ type (
 				Category  string `json:"category"`
 				Link      string `json:"link"`
 			} `json:"application"`
+			Attachments struct {
+				Data []struct {
+					SubAttachments *struct {
+						Data []struct {
+							Description string `json:"description"`
+							Target      struct {
+								ID string `json:"id"`
+							} `json:"target"`
+						} `json:"data"`
+					} `json:"subattachments,omitempty"`
+				} `json:"data"`
+			} `json:"attachments"`
 		} `json:"data"`
 		Paging struct {
 			Previous string `json:"previous"`
@@ -39,7 +55,7 @@ type (
 	}
 	Image struct {
 		ID     string `json:"id"`
-		Name     string `json:"name"`
+		Name   string `json:"name"`
 		Images []struct {
 			Width  int    `json:"width"`
 			Height int    `json:"height"`
@@ -47,13 +63,31 @@ type (
 		} `json:"images"`
 	}
 	Result struct {
-		Message  string
-		ImageID  string
-		ImageURL string
+		Message string
+		Images  []Image
 	}
 )
 
-var sess *facebook.Session
+var (
+	sess            *facebook.Session
+	_latestObjectID uint64
+	mu              sync.Mutex
+)
+
+func getLatestObjectID() uint64 {
+	mu.Lock()
+	defer mu.Unlock()
+
+	id := _latestObjectID
+	return id
+}
+
+func setLatestObjectID(id uint64) {
+	mu.Lock()
+	defer mu.Unlock()
+
+	_latestObjectID = id
+}
 
 func initFacebookSession(env *Env, cred *Credential) {
 	app := facebook.New(env.AppID, env.AppSecret)
@@ -102,26 +136,33 @@ func handleImage() {
 		return
 	}
 
-	result, err := getImageURL()
+	result, err := getImageURLs()
 	if err != nil {
 		return
 	}
 
-	filePath, err := saveImage(result.ImageID, result.ImageURL)
-	if err != nil {
-		return
+	filePaths := make([]string, len(result.Images))
+	for i, image := range result.Images {
+		filePath, err := saveImage(image.ID, image.Images[0].Source)
+		if err != nil {
+			return
+		}
+		filePaths[i] = *filePath
 	}
+
 	if env.Mode.Mastodon {
-		postMastodon(env, result.Message, *filePath)
+		postMastodon(env, result.Message, filePaths)
 	}
 	if !env.Mode.Save {
-		deleteFile(*filePath)
+		for _, filePath := range filePaths {
+			deleteFile(filePath)
+		}
 	}
 }
 
-func getImageURL() (*Result, error) {
+func getImageURLs() (*Result, error) {
 	feedResult, err := sess.Get("/me/feed", M{
-		"fields": "application,object_id,message",
+		"fields": "application,object_id,message,attachments",
 	})
 	if err != nil {
 		log.Println("feed fetch error:", err)
@@ -138,10 +179,31 @@ func getImageURL() (*Result, error) {
 	}
 	latestObjectID := ""
 	message := ""
+	targetObjectIDs := make([]string, 0)
 	for _, v := range feed.Data {
 		if v.Application.NameSpace == "nintendoswitchshare" {
 			latestObjectID = v.ObjectID
-			message = v.Message
+
+			lastDescription := ""
+			if v.Message != nil {
+				message = *v.Message
+				lastDescription = *v.Message
+			}
+			for _, a := range v.Attachments.Data {
+				if a.SubAttachments == nil {
+					targetObjectIDs = append(targetObjectIDs, v.ObjectID)
+					break
+				}
+				for _, d := range a.SubAttachments.Data {
+					if lastDescription == "" && d.Description != "" {
+						lastDescription = d.Description
+					}
+					if lastDescription == d.Description {
+						targetObjectIDs = append(targetObjectIDs, d.Target.ID)
+					}
+				}
+				break
+			}
 			break
 		}
 	}
@@ -149,33 +211,42 @@ func getImageURL() (*Result, error) {
 		return nil, err
 	}
 
-	imageResult, err := sess.Get(latestObjectID, M{
-		"fields": "name,images",
-	})
-	if err != nil {
-		log.Println("image list fetch error:", err)
-		return nil, err
+	latestUint64ObjectID, err := strconv.ParseUint(latestObjectID, 10, 64)
+	if latestUint64ObjectID <= getLatestObjectID() {
+		return nil, errors.New("already posted")
 	}
+	setLatestObjectID(latestUint64ObjectID)
 
-	image := new(Image)
-	if err := imageResult.Decode(image); err != nil {
-		log.Println("feed decode error:", err)
-		return nil, err
-	}
-	if len(image.Images) == 0 {
-		return nil, err
-	}
-	sort.Slice(image.Images, func(i, j int) bool {
-		return image.Images[i].Width > image.Images[j].Width
-	})
-	if message == "" {
-		// FIXME: なんかこれでもtext取れたり取れなかったりするんだよなぁ
-		message = image.Name
+	images := make([]Image, len(targetObjectIDs))
+	for i, id := range targetObjectIDs {
+		imageResult, err := sess.Get(id, M{
+			"fields": "name,images",
+		})
+		if err != nil {
+			log.Println("image list fetch error:", err)
+			return nil, err
+		}
+
+		image := new(Image)
+		if err := imageResult.Decode(image); err != nil {
+			log.Println("feed decode error:", err)
+			return nil, err
+		}
+		if len(image.Images) == 0 {
+			return nil, err
+		}
+		sort.Slice(image.Images, func(i, j int) bool {
+			return image.Images[i].Width > image.Images[j].Width
+		})
+		if message == "" && image.Name != "" {
+			// FIXME: なんかこれでもtext取れたり取れなかったりするんだよなぁ
+			message = image.Name
+		}
+		images[i] = *image
 	}
 
 	return &Result{
-		Message:  message,
-		ImageID:  image.ID,
-		ImageURL: image.Images[0].Source,
+		Message: message,
+		Images:  images,
 	}, nil
 }
