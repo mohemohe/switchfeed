@@ -25,9 +25,9 @@ type (
 	}
 	Feed struct {
 		Data []struct {
-			ID          string `json:"id"`
-			ObjectID    string `json:"object_id"`
-			Message     string `json:"message"`
+			ID          string  `json:"id"`
+			ObjectID    string  `json:"object_id"`
+			Message     *string `json:"message,omitempty"`
 			Application struct {
 				ID        string `json:"id"`
 				Name      string `json:"name"`
@@ -39,7 +39,8 @@ type (
 				Data []struct {
 					SubAttachments *struct {
 						Data []struct {
-							Target []struct {
+							Description string `json:"description"`
+							Target      struct {
 								ID string `json:"id"`
 							} `json:"target"`
 						} `json:"data"`
@@ -182,17 +183,26 @@ func getImageURLs() (*Result, error) {
 	for _, v := range feed.Data {
 		if v.Application.NameSpace == "nintendoswitchshare" {
 			latestObjectID = v.ObjectID
-			message = v.Message
+
+			lastDescription := ""
+			if v.Message != nil {
+				message = *v.Message
+				lastDescription = *v.Message
+			}
 			for _, a := range v.Attachments.Data {
 				if a.SubAttachments == nil {
 					targetObjectIDs = append(targetObjectIDs, v.ObjectID)
 					break
 				}
 				for _, d := range a.SubAttachments.Data {
-					for _, t := range d.Target {
-						targetObjectIDs = append(targetObjectIDs, t.ID)
+					if lastDescription == "" && d.Description != "" {
+						lastDescription = d.Description
+					}
+					if lastDescription == d.Description {
+						targetObjectIDs = append(targetObjectIDs, d.Target.ID)
 					}
 				}
+				break
 			}
 			break
 		}
