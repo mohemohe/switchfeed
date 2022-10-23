@@ -14,13 +14,14 @@ func postMastodon(env *Env, text string, filePaths []string) {
 	})
 
 	mediaIDs := make([]mastodon.ID, len(filePaths))
-	for _, filePath := range filePaths {
+	for i, filePath := range filePaths {
 		attachment, err := client.UploadMedia(context.TODO(), filePath)
 		if err != nil {
 			log.Println("mastodon file upload error:", filePath, err)
 			return
 		}
-		mediaIDs = append(mediaIDs, attachment.ID)
+		log.Println("mastodon file uploaded:", attachment.ID)
+		mediaIDs[i] = attachment.ID
 	}
 
 	status, err := client.PostStatus(context.TODO(), &mastodon.Toot{
